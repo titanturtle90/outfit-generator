@@ -688,14 +688,33 @@
     numeric('#pair-gap', 'pairGapDays');
 
     $('#export-btn').addEventListener('click', () => {
+      const btn = $('#export-btn');
+      btn.disabled = true;
+      toast('Packing up your closet…', 8000);
+
       DB.exportAll().then(payload => {
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `workweek-backup-${Outfit.toKey(new Date())}.json`;
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-      });
+        const json = JSON.stringify(payload, null, 2);
+        const filename = `workweek-backup-${Outfit.toKey(new Date())}.json`;
+        const file = new File([json], filename, { type: 'application/json' });
+        const size = (json.length / 1048576).toFixed(1);
+
+        // On a phone, sharing beats downloading: the backup can go straight to
+        // AirDrop, Messages or a cloud drive instead of landing in Files for the
+        // user to dig out again. Everywhere else, download it.
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          return navigator.share({ files: [file], title: filename })
+            .then(() => toast(`Sent — ${payload.items.length} items, ${size} MB.`))
+            .catch(err => {
+              if (err && err.name === 'AbortError') { toast('Export cancelled.'); return; }
+              downloadFile(file, filename);
+              toast(`Downloaded — ${payload.items.length} items, ${size} MB.`);
+            });
+        }
+        downloadFile(file, filename);
+        toast(`Downloaded — ${payload.items.length} items, ${size} MB.`);
+      })
+      .catch(err => { console.error(err); toast('Export failed. Try again.'); })
+      .then(() => { btn.disabled = false; });
     });
 
     $('#import-btn').addEventListener('click', () => $('#import-input').click());
@@ -739,6 +758,17 @@
   }
 
   /* ---------------------- misc ---------------------- */
+
+  function downloadFile(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);   // Safari ignores a click on a detached anchor
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
 
   function button(label, cls, onClick) {
     const b = document.createElement('button');

@@ -93,9 +93,15 @@ alternate evenly instead of the better-scoring one running three times.
 The closet, the photos and the history live in this browser's IndexedDB.
 Clearing site data wipes it. Photos are downscaled to 700px on the way in.
 
+**Each browser is its own closet.** Your phone and your laptop keep separate
+databases and nothing syncs between them, so a shirt added on one will not
+appear on the other.
+
 **Settings → Export** writes a single JSON file with the images embedded — that's
-the backup, and it's how you move the closet to another browser or device.
-Import replaces what's there.
+the backup, and it's how you move the closet between devices. On a phone it
+opens the share sheet (AirDrop, Messages, a cloud drive); elsewhere it
+downloads. **Import** on the other device replaces what's there, photos and
+wear history included.
 
 ## Tests
 

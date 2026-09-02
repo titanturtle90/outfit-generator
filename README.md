@@ -105,7 +105,7 @@ The two engine modules are pure and covered by a dependency-free suite:
 node tests/engine.test.js
 ```
 
-62 assertions over color naming and classification, the harmony and shoe rules,
+73 assertions over color naming and classification, the harmony and shoe rules,
 date handling, week generation, degenerate closets (empty, no shoes, fewer
 clothes than days), locking, single-day re-rolls, and a twelve-week rotation
 simulation that asserts wear counts stay within one of each other while the

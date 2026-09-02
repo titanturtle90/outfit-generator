@@ -13,7 +13,8 @@
     settings: null,
     viewMonday: Outfit.weekStart(new Date()),
     editingId: null,
-    pendingImage: null,   // { blob, palette } for the item being added
+    pendingImage: null,   // resized Blob for the item being added
+    colorTouched: false,  // user has set the colour by hand; auto-detect must not overwrite it
     queue: [],            // extra files dropped in one go, added one at a time
     filter: 'all'
   };
@@ -371,6 +372,7 @@
     input.addEventListener('change', () => { handleFiles(input.files); input.value = ''; });
 
     $('#item-color').addEventListener('input', e => {
+      state.colorTouched = true;
       $('#color-name').textContent = Color.name(e.target.value);
     });
 
@@ -431,6 +433,7 @@
   }
 
   function loadIntoForm(file) {
+    state.colorTouched = false;
     prepareImage(file).then(({ blob, palette, preview }) => {
       state.pendingImage = blob;
       const img = $('#preview');
@@ -438,8 +441,11 @@
       img.classList.remove('hidden');
       $('#drop-hint').classList.add('hidden');
 
-      $('#item-color').value = palette[0];
-      $('#color-name').textContent = Color.name(palette[0]);
+      // Extraction finished after the user already chose a colour — leave it alone.
+      if (!state.colorTouched) {
+        $('#item-color').value = palette[0];
+        $('#color-name').textContent = Color.name(palette[0]);
+      }
       renderSuggestions(palette);
 
       if (!$('#item-name').value) {
@@ -460,6 +466,7 @@
       b.style.background = hex;
       b.title = Color.name(hex);
       b.addEventListener('click', () => {
+        state.colorTouched = true;
         $('#item-color').value = hex;
         $('#color-name').textContent = Color.name(hex);
       });
@@ -506,6 +513,7 @@
   function editItem(item) {
     state.editingId = item.id;
     state.pendingImage = null;
+    state.colorTouched = true;
     $('#item-name').value = item.name;
     $('#item-category').value = item.category;
     $('#item-color').value = item.color;
@@ -523,6 +531,7 @@
   function resetForm() {
     state.editingId = null;
     state.pendingImage = null;
+    state.colorTouched = false;
     $('#add-form').reset();
     $('#item-rotation').checked = true;
     $('#preview').classList.add('hidden');

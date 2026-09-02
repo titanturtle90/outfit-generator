@@ -102,8 +102,8 @@ const Color = (function () {
   /* ---------------------- naming ---------------------- */
 
   const HUE_NAMES = [
-    [15, 'red'], [40, 'orange'], [65, 'yellow'], [95, 'chartreuse'], [150, 'green'],
-    [185, 'teal'], [210, 'sky blue'], [250, 'blue'], [280, 'violet'], [320, 'magenta'], [360, 'red']
+    [15, 'red'], [40, 'orange'], [65, 'yellow'], [95, 'chartreuse'], [165, 'green'],
+    [190, 'teal'], [210, 'sky blue'], [250, 'blue'], [280, 'violet'], [320, 'magenta'], [360, 'red']
   ];
 
   /** Human-readable color name, tuned for clothes rather than paint chips. */
@@ -117,7 +117,7 @@ const Color = (function () {
       if (l > 0.18) return 'charcoal';
       return 'black';
     }
-    if (l < 0.12) return 'black';
+    if (l < 0.06) return 'black';  // below this the hue is not perceivable
 
     // Wardrobe staples worth naming precisely.
     if (h >= 195 && h <= 255 && l < 0.32) return 'navy';

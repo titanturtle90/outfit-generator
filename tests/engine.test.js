@@ -35,6 +35,16 @@ section('color naming');
   ['#e6bec4', 'pink'], ['#eeeeea', 'white'], ['#6b4a2f', 'brown'], ['#8a3f2f', 'rust']
 ].forEach(([hex, expected]) => t(`${hex} is ${expected}`, Color.name(hex), is(expected)));
 
+section('dark colors keep their hue (regression: dark greens were named black)');
+[
+  ['#013220', 'dark green'], ['#0d2b18', 'dark green'], ['#08300a', 'dark green'],
+  ['#004225', 'dark green'], ['#006400', 'dark green'], ['#1a4d2e', 'dark green']
+].forEach(([hex, expected]) => t(`${hex} is ${expected}, not black`, Color.name(hex), is(expected)));
+[
+  ['#000000', 'black'], ['#111111', 'black'], ['#1a1a1c', 'black'], ['#161618', 'black']
+].forEach(([hex, expected]) => t(`${hex} is still ${expected}`, Color.name(hex), is(expected)));
+t('a very dark blue is still navy, not black', Color.name('#0b1a33'), is('navy'));
+
 /* ---------------------------- neutrals ---------------------------- */
 section('neutral classification');
 ['#ffffff', '#111111', '#1b2a4a', '#8a8f98', '#c8b394', '#e8d9c0', '#556b2f']

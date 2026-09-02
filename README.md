@@ -32,7 +32,10 @@ To put it online, push this repo and turn on **GitHub Pages** (Settings → Page
 1. **Closet** — **Add clothes** opens the entry panel; dragging photos anywhere
    over the closet opens it too. Drop several at once and they queue up, one
    after another, and the panel closes itself when the last one is saved. Each
-   item gets a name, a category, and a color the app reads off the photo. The
+   item gets a category and a color the app reads off the photo, and its **name
+   is written for you** from what you enter — brand, then type, then color, so
+   "Uniqlo Polo Navy". Type your own name over it and the app stops rewriting
+   it. The
    four swatches next to the picker are the other colors it found, in case it
    grabbed your wall instead of your shirt. **Style** (polo, button-down,
    chinos, boots…) and **brand** are optional; the style list follows the

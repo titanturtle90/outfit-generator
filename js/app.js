@@ -28,6 +28,7 @@
     editingId: null,
     pendingImage: null,   // resized Blob for the item being added
     colorTouched: false,  // user has set the colour by hand; auto-detect must not overwrite it
+    autoName: '',         // the last name we generated, so a hand-written one is never overwritten
     queue: [],            // extra files dropped in one go, added one at a time
     filter: 'all',
     styleFilter: '',
@@ -396,6 +397,35 @@
 
   /* ---------------------- closet ---------------------- */
 
+  const titleCase = str => str.replace(/\b[a-z]/g, c => c.toUpperCase());
+
+  /**
+   * Names are built from what you entered: brand, then type, then colour —
+   * "Uniqlo Polo Navy". Type is the style when there is one and the category
+   * otherwise, so an unlabelled item still reads as "Uniqlo Shirt Navy" rather
+   * than just a colour.
+   */
+  function composeName() {
+    const brand = $('#item-brand').value.trim();
+    const style = $('#item-style').value;
+    const category = $('#item-category').value;
+    const type = style || titleCase(category);
+    const color = titleCase(Color.name($('#item-color').value));
+    return [brand, type, color].filter(Boolean).join(' ');
+  }
+
+  /**
+   * Regenerate the name, unless the field holds something the user wrote
+   * themselves. Comparing against the last generated value is what tells the
+   * two apart: anything else in the box was typed, and is left alone.
+   */
+  function refreshAutoName() {
+    const field = $('#item-name');
+    if (field.value && field.value !== state.autoName) return;
+    state.autoName = composeName();
+    field.value = state.autoName;
+  }
+
   /** Refill the style menu for a category, keeping the choice if it still fits. */
   function renderStyleOptions(category, selected) {
     const sel = $('#item-style');
@@ -453,12 +483,16 @@
 
     $('#item-category').addEventListener('change', e => {
       renderStyleOptions(e.target.value, $('#item-style').value);
+      refreshAutoName();
     });
+    $('#item-style').addEventListener('change', refreshAutoName);
+    $('#item-brand').addEventListener('input', refreshAutoName);
     renderStyleOptions($('#item-category').value, '');
 
     $('#item-color').addEventListener('input', e => {
       state.colorTouched = true;
       $('#color-name').textContent = Color.name(e.target.value);
+      refreshAutoName();
     });
 
     $('#add-form').addEventListener('submit', e => { e.preventDefault(); saveItem(); });
@@ -543,11 +577,8 @@
       }
       renderSuggestions(palette);
 
-      if (!$('#item-name').value) {
-        const base = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
-        $('#item-name').value = base ? base.charAt(0).toUpperCase() + base.slice(1) : '';
-      }
-      $('#item-name').focus();
+      refreshAutoName();
+      $('#item-brand').focus();
     }).catch(err => toast(err.message));
   }
 
@@ -564,6 +595,7 @@
         state.colorTouched = true;
         $('#item-color').value = hex;
         $('#color-name').textContent = Color.name(hex);
+        refreshAutoName();
       });
       wrap.appendChild(b);
     });
@@ -617,6 +649,7 @@
     renderStyleOptions(item.category, item.style || '');
     $('#item-brand').value = item.brand || '';
     $('#item-color').value = item.color;
+    state.autoName = composeName();
     $('#color-name').textContent = Color.name(item.color);
     $('#item-rotation').checked = item.inRotation !== false;
     $('#save-item').textContent = 'Save changes';
@@ -640,6 +673,7 @@
     $('#add-form').reset();
     $('#item-rotation').checked = true;
     renderStyleOptions($('#item-category').value, '');
+    state.autoName = '';
     $('#preview').classList.add('hidden');
     $('#preview').src = '';
     $('#drop-hint').classList.remove('hidden');

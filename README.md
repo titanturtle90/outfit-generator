@@ -90,18 +90,55 @@ alternate evenly instead of the better-scoring one running three times.
 
 ## Your data
 
-The closet, the photos and the history live in this browser's IndexedDB.
-Clearing site data wipes it. Photos are downscaled to 700px on the way in.
+Out of the box the closet, the photos and the history live in this browser's
+IndexedDB — nothing is uploaded and each browser keeps a separate closet.
+Photos are downscaled to 700px on the way in. Turn on sync below and the same
+closet follows you across devices instead.
 
-**Each browser is its own closet.** Your phone and your laptop keep separate
-databases and nothing syncs between them, so a shirt added on one will not
-appear on the other.
+**Settings → Export** writes a single JSON file with the images embedded. On a
+phone it opens the share sheet (AirDrop, Messages, a cloud drive); elsewhere it
+downloads. **Import** replaces what's there, photos and wear history included.
+Useful as a backup whether or not sync is on.
 
-**Settings → Export** writes a single JSON file with the images embedded — that's
-the backup, and it's how you move the closet between devices. On a phone it
-opens the share sheet (AirDrop, Messages, a cloud drive); elsewhere it
-downloads. **Import** on the other device replaces what's there, photos and
-wear history included.
+## Syncing across devices
+
+Optional, off by default, and it needs a Firebase project of your own. Photos
+are stored in Firestore rather than Cloud Storage specifically so that the free
+Spark plan is enough — **no billing account or credit card required.** A 700px
+JPEG is 60–120KB against a 1 GiB allowance, so a large closet uses a few MB.
+
+**In the [Firebase console](https://console.firebase.google.com):**
+
+1. **Add project.** Name it anything; Google Analytics can be off.
+2. **Build → Firestore Database → Create database.** Choose *production mode*
+   and a region near you.
+3. **Build → Authentication → Get started → Google → Enable**, set a support
+   email, Save.
+4. **Firestore Database → Rules**, replace what's there with the contents of
+   [`firestore.rules`](firestore.rules), and Publish. This is the part that
+   actually protects your data — don't skip it.
+5. **Authentication → Settings → Authorized domains → Add domain**, and add the
+   domain you serve the app from (e.g. `titanturtle90.github.io`).
+6. **Project settings (gear) → Your apps → Web (`</>`)**, register the app, and
+   copy the `firebaseConfig` values.
+
+**In this repo:** paste `apiKey`, `authDomain`, `projectId` and `appId` into
+[`js/firebase-config.js`](js/firebase-config.js), then commit and push.
+
+**On each device:** open the app → **Settings → Sign in with Google**.
+
+The first device you sign in on uploads the closet it already has. Sign in on
+the others and the same closet appears, updating live as you add clothes or
+mark outfits worn. Signing out returns that browser to its own local copy.
+
+Those config values are safe to commit: Firebase web config is public in every
+app that uses it, and it grants nothing on its own. The security rules are what
+matter, and they allow a signed-in person to read and write their own closet
+and nothing else — verified against the emulator for unauthenticated reads,
+cross-user reads and writes, and access outside `/users`.
+
+Leave `js/firebase-config.js` blank and none of this exists: no sign-in UI, no
+network calls, and the Firebase SDK is never even downloaded.
 
 ## Tests
 
@@ -120,14 +157,20 @@ average color score holds above 85.
 ## Layout
 
 ```
-index.html          markup for all four views
-styles.css          styling, light and dark
-js/color.js         color math, garment naming, extraction, harmony rules
-js/db.js            IndexedDB persistence, import/export
-js/outfit.js        scoring and week generation  (no DOM, no storage)
-js/app.js           UI wiring
+index.html            markup for all four views
+styles.css            styling, light and dark
+js/color.js           color math, garment naming, extraction, harmony rules
+js/outfit.js          scoring and week generation  (no DOM, no storage)
+js/db.js              local IndexedDB store
+js/cloud.js           Firestore store — same interface as db.js
+js/store.js           picks between the two; the app only ever calls this
+js/firebase-config.js your Firebase project, or blank for local-only
+js/app.js             UI wiring
+firestore.rules       security rules to paste into the Firebase console
 tests/engine.test.js
 ```
 
 `color.js` and `outfit.js` touch neither the DOM nor storage, which is what
-makes them testable in plain Node.
+makes them testable in plain Node. `db.js` and `cloud.js` expose the same
+fourteen methods, so `store.js` can swap one for the other at sign-in without
+any call site knowing.

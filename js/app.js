@@ -16,7 +16,8 @@
     pendingImage: null,   // resized Blob for the item being added
     colorTouched: false,  // user has set the colour by hand; auto-detect must not overwrite it
     queue: [],            // extra files dropped in one go, added one at a time
-    filter: 'all'
+    filter: 'all',
+    syncStatus: 'synced'
   };
 
   const objectUrls = new Map();
@@ -33,15 +34,51 @@
 
   /* ---------------------- boot ---------------------- */
 
-  Promise.all([DB.getItems(), DB.getOutfits(), DB.getSettings()])
+  // Wait for Firebase to report whether anyone is signed in before the first
+  // paint, so a synced device does not flash its old local closet first.
+  Cloud.boot()
+    .catch(err => { console.error(err); return null; })
+    .then(user => {
+      if (user) Store.useCloud();
+      return Promise.all([Store.getItems(), Store.getOutfits(), Store.getSettings()]);
+    })
     .then(([items, outfits, settings]) => {
       state.items = items;
       state.outfits = outfits;
       state.settings = settings;
       hydrateSettingsForm();
       bindEvents();
+      bindSyncEvents();
       renderAll();
+      renderSync();
       ensureWeek();
+
+      // Another device changed something — fold it in and repaint. Deliberately
+      // does not re-plan the week: that is the other device's business, and
+      // re-planning here would have the two of them fighting over it.
+      Cloud.onRemoteChange(() => {
+        if (!Store.isCloud()) return;
+        Promise.all([Store.getItems(), Store.getOutfits(), Store.getSettings()])
+          .then(([i, o, st]) => {
+            state.items = i;
+            state.outfits = o;
+            state.settings = st;
+            renderAll();
+          });
+      });
+      Cloud.onStatus(status => { state.syncStatus = status; renderSync(); });
+      // Signing in here is a real transition, so it carries the migration.
+      Cloud.onAuthChange(u => {
+        if (u) return becomeCloud({ migrate: true });
+        Store.useLocal();
+        return reloadFromStore().then(renderSync);
+      });
+
+      // Returning from a redirect sign-in: boot() already saw the user, but the
+      // migration still has to happen, and only this once.
+      let pending = false;
+      try { pending = sessionStorage.getItem('workweek-signing-in') === '1'; } catch (e) {}
+      if (pending && Cloud.currentUser()) becomeCloud({ migrate: true });
     })
     .catch(err => {
       console.error(err);
@@ -79,7 +116,7 @@
       state.settings.colorWeight = Number(slider.value) / 100;
     });
     slider.addEventListener('change', () => {
-      DB.saveSettings({ colorWeight: state.settings.colorWeight })
+      Store.saveSettings({ colorWeight: state.settings.colorWeight })
         .then(() => buildWeek({ force: true }));
     });
 
@@ -153,7 +190,7 @@
       .filter(day => !locked[day.date])
       .map(day => {
         upsertOutfit(day);
-        return DB.putOutfit(day);
+        return Store.putOutfit(day);
       });
 
     Promise.all(writes).then(() => renderWeek());
@@ -275,7 +312,7 @@
       actions.appendChild(button('Shuffle', 'btn-ghost', () => shuffleDay(date)));
       actions.appendChild(button(outfit.locked ? '🔒 Locked' : 'Lock', 'btn-ghost', () => {
         outfit.locked = !outfit.locked;
-        DB.putOutfit(outfit).then(() => renderWeek());
+        Store.putOutfit(outfit).then(() => renderWeek());
       }));
       actions.appendChild(button('Mark worn', 'btn-primary', () => markWorn(outfit)));
     }
@@ -310,7 +347,7 @@
     if (res.error || !res.days.length) { toast(res.error || 'Nothing to shuffle.'); return; }
     const day = res.days[0];
     upsertOutfit(day);
-    DB.putOutfit(day).then(() => renderWeek());
+    Store.putOutfit(day).then(() => renderWeek());
   }
 
   function markWorn(outfit) {
@@ -323,10 +360,10 @@
       .map(item => {
         item.wearCount = (item.wearCount || 0) + 1;
         item.lastWorn = outfit.date;
-        return DB.putItem(item);
+        return Store.putItem(item);
       });
 
-    Promise.all(updates.concat(DB.putOutfit(outfit)))
+    Promise.all(updates.concat(Store.putOutfit(outfit)))
       .then(() => { renderWeek(); renderCloset(); renderHistory(); toast('Logged.'); });
   }
 
@@ -345,10 +382,10 @@
                        [o.shirtId, o.pantsId, o.shoesId].includes(item.id))
           .map(o => o.date).sort();
         item.lastWorn = prior.length ? prior[prior.length - 1] : null;
-        return DB.putItem(item);
+        return Store.putItem(item);
       });
 
-    Promise.all(updates.concat(DB.putOutfit(outfit)))
+    Promise.all(updates.concat(Store.putOutfit(outfit)))
       .then(() => { renderWeek(); renderCloset(); renderHistory(); });
   }
 
@@ -395,7 +432,7 @@
       if (e.target.closest('[data-action="edit"]')) return editItem(item);
       if (e.target.closest('[data-action="rotation"]')) {
         item.inRotation = item.inRotation === false;
-        return DB.putItem(item).then(() => { renderCloset(); replanWeek(); });
+        return Store.putItem(item).then(() => { renderCloset(); replanWeek(); });
       }
     });
   }
@@ -494,7 +531,7 @@
     });
     if (state.pendingImage) item.image = state.pendingImage;
 
-    DB.putItem(item).then(saved => {
+    Store.putItem(item).then(saved => {
       forgetUrl(saved.id);
       const idx = state.items.findIndex(i => i.id === saved.id);
       if (idx >= 0) state.items[idx] = saved; else state.items.push(saved);
@@ -550,7 +587,7 @@
     const orphaned = state.outfits.filter(o =>
       o.status !== 'worn' && [o.shirtId, o.pantsId, o.shoesId].includes(item.id));
 
-    Promise.all([DB.deleteItem(item.id)].concat(orphaned.map(o => DB.deleteOutfit(o.date))))
+    Promise.all([Store.deleteItem(item.id)].concat(orphaned.map(o => Store.deleteOutfit(o.date))))
       .then(() => {
         forgetUrl(item.id);
         state.items = state.items.filter(i => i.id !== item.id);
@@ -646,6 +683,114 @@
   const statTile = (value, label) =>
     `<div class="stat"><strong>${value}</strong><span class="muted">${label}</span></div>`;
 
+
+  /* ---------------------- sync ---------------------- */
+
+  function renderSync() {
+    const card = $('#sync-card');
+    if (!card) return;
+
+    if (!Cloud.configured()) {
+      card.dataset.state = 'unconfigured';
+      $('#sync-detail').textContent =
+        'Not set up. This browser keeps its own closet, and nothing syncs. ' +
+        'See "Syncing across devices" in the README to switch it on.';
+      return;
+    }
+
+    const user = Cloud.currentUser();
+    if (!user) {
+      card.dataset.state = 'signed-out';
+      $('#sync-detail').textContent =
+        'Sign in on each device and they all share one closet.';
+      return;
+    }
+
+    card.dataset.state = 'signed-in';
+    const label = { synced: 'All changes saved', saving: 'Saving…', offline: 'Offline — will sync when you reconnect' };
+    $('#sync-detail').textContent = `Signed in as ${user.email || user.displayName || 'your account'}.`;
+    $('#sync-status').textContent = label[state.syncStatus] || label.synced;
+    $('#sync-status').dataset.status = state.syncStatus;
+  }
+
+  function bindSyncEvents() {
+    const signIn = $('#sync-signin');
+    const signOut = $('#sync-signout');
+    if (!signIn) return;
+
+    signIn.addEventListener('click', () => {
+      signIn.disabled = true;
+      try { sessionStorage.setItem('workweek-signing-in', '1'); } catch (e) {}
+      Cloud.signIn()
+        .then(result => (result ? becomeCloud({ migrate: true }) : null))  // null while redirecting
+        .catch(err => {
+          try { sessionStorage.removeItem('workweek-signing-in'); } catch (e) {}
+          console.error(err);
+          toast(err && err.code === 'auth/unauthorized-domain'
+            ? 'This domain is not authorised in your Firebase project.'
+            : 'Sign-in failed.');
+        })
+        .then(() => { signIn.disabled = false; });
+    });
+
+    signOut.addEventListener('click', () => {
+      if (!confirm('Sign out? Your closet stays in the cloud, and this browser goes back to its own local copy.')) return;
+      Cloud.signOut()
+        .then(() => { Store.useLocal(); return reloadFromStore(); })
+        .then(() => { renderSync(); toast('Signed out.'); });
+    });
+  }
+
+  /**
+   * First sign-in on a device that has been running locally. If the cloud is
+   * empty we lift this browser's closet into it; if both have data the user
+   * has to say which one wins, because silently merging two closets would
+   * produce duplicates of every shirt.
+   */
+  let migrating = null;
+
+  /**
+   * Switch the app over to the cloud store. `migrate` runs the first-sign-in
+   * reconciliation; it is skipped when simply resuming an existing session,
+   * so returning users are not re-asked on every page load.
+   */
+  function becomeCloud({ migrate }) {
+    Store.useCloud();
+    const step = migrate ? (migrating = migrating || afterSignIn()) : Promise.resolve();
+    return step
+      .catch(err => { console.error(err); toast('Could not move your closet to the cloud.'); })
+      .then(() => { migrating = null; try { sessionStorage.removeItem('workweek-signing-in'); } catch (e) {} })
+      .then(reloadFromStore)
+      .then(renderSync);
+  }
+
+  function afterSignIn() {
+    const cloudEmpty = Cloud.isEmpty();
+    return DB.getItems().then(localItems => {
+      const hasLocal = localItems.length > 0;
+
+      if (cloudEmpty && hasLocal) {
+        toast('Uploading your closet…', 8000);
+        return Cloud.uploadLocal()
+          .then(() => toast('Closet uploaded. Sign in on your other devices to see it.'));
+      }
+
+      if (!cloudEmpty && hasLocal) {
+        const keepCloud = confirm(
+          'You already have a closet in the cloud, and this browser has one of its own.\n\n' +
+          'OK — use the cloud closet (this browser\'s local copy is left alone but no longer used).\n' +
+          'Cancel — replace the cloud closet with the one in this browser.');
+        if (keepCloud) return null;
+        toast('Replacing the cloud closet…', 8000);
+        return DB.exportAll()
+          .then(payload => Cloud.importAll(payload))
+          .then(() => toast('Cloud closet replaced.'));
+      }
+
+      return null;
+    });
+  }
+
   /* ---------------------- settings ---------------------- */
 
   function hydrateSettingsForm() {
@@ -673,7 +818,7 @@
       days.has(day) ? days.delete(day) : days.add(day);
       state.settings.workDays = [...days].sort();
       chip.classList.toggle('is-active');
-      DB.saveSettings({ workDays: state.settings.workDays }).then(() => {
+      Store.saveSettings({ workDays: state.settings.workDays }).then(() => {
         renderWeek(); ensureWeek();
       });
     });
@@ -682,7 +827,7 @@
       const v = Math.max(0, Number(e.target.value) || 0);
       state.settings[key] = v;
       e.target.value = v;
-      DB.saveSettings({ [key]: v });
+      Store.saveSettings({ [key]: v });
     });
     numeric('#min-gap', 'minGapDays');
     numeric('#pair-gap', 'pairGapDays');
@@ -692,7 +837,7 @@
       btn.disabled = true;
       toast('Packing up your closet…', 8000);
 
-      DB.exportAll().then(payload => {
+      Store.exportAll().then(payload => {
         const json = JSON.stringify(payload, null, 2);
         const filename = `workweek-backup-${Outfit.toKey(new Date())}.json`;
         const file = new File([json], filename, { type: 'application/json' });
@@ -725,8 +870,8 @@
         e.target.value = ''; return;
       }
       file.text()
-        .then(text => DB.importAll(JSON.parse(text)))
-        .then(reloadFromDb)
+        .then(text => Store.importAll(JSON.parse(text)))
+        .then(reloadFromStore)
         .then(() => toast('Backup imported.'))
         .catch(err => toast(err.message || 'Could not read that file.'))
         .then(() => { e.target.value = ''; });
@@ -734,19 +879,19 @@
 
     $('#clear-history').addEventListener('click', () => {
       if (!confirm('Clear all wear history and reset every wear count?')) return;
-      DB.clearHistory().then(reloadFromDb).then(() => toast('History cleared.'));
+      Store.clearHistory().then(reloadFromStore).then(() => toast('History cleared.'));
     });
 
     $('#clear-all').addEventListener('click', () => {
       if (!confirm('Delete the entire closet, history and settings? This cannot be undone.')) return;
-      DB.clearAll().then(reloadFromDb).then(() => toast('Everything deleted.'));
+      Store.clearAll().then(reloadFromStore).then(() => toast('Everything deleted.'));
     });
   }
 
-  function reloadFromDb() {
+  function reloadFromStore() {
     objectUrls.forEach(url => URL.revokeObjectURL(url));
     objectUrls.clear();
-    return Promise.all([DB.getItems(), DB.getOutfits(), DB.getSettings()])
+    return Promise.all([Store.getItems(), Store.getOutfits(), Store.getSettings()])
       .then(([items, outfits, settings]) => {
         state.items = items;
         state.outfits = outfits;

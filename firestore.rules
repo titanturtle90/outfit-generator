@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Every closet lives under its owner's uid, so one rule covers the lot:
+// you may read and write your own data and nobody else's. Nothing here is
+// world-readable, which is why the public Firebase config in
+// js/firebase-config.js is safe to commit.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Anything outside a user's own subtree is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

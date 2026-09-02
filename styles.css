@@ -336,3 +336,16 @@ input[type=color] {
   .add-card { flex-direction: column; }
   .drop-zone { width: 100%; height: 150px; }
 }
+
+/* ---------------- sync ---------------- */
+
+.sync-row { align-items: center; }
+.sync-status { font-size: 12.5px; color: var(--muted); }
+.sync-status[data-status="offline"] { color: #b6821f; }
+.sync-status[data-status="saving"] { font-style: italic; }
+
+/* The card shows only the controls that make sense for the current state. */
+#sync-card[data-state="unconfigured"] .sync-row { display: none; }
+#sync-card[data-state="signed-out"] #sync-signout,
+#sync-card[data-state="signed-out"] #sync-status { display: none; }
+#sync-card[data-state="signed-in"] #sync-signin { display: none; }

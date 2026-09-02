@@ -168,11 +168,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px; }
   width: 76px; height: 76px; flex: none;
   border-radius: 8px; overflow: hidden; border: 1px solid var(--border);
 }
-/* `contain` for the same reason as the closet cards: identifying the garment
-   matters more than a tidy edge. */
+/* Square and filled, matching the closet cards. */
 .thumb img {
-  width: 100%; height: 100%; object-fit: contain; display: block;
-  background: var(--surface-2);
+  width: 100%; height: 100%; object-fit: cover; object-position: center;
+  display: block; background: var(--surface-2);
 }
 
 .piece-meta { display: flex; flex-direction: column; min-width: 0; }
@@ -284,16 +283,19 @@ input[type=color] {
 .item-card.is-benched { opacity: .5; }
 
 .item-thumb {
-  width: 100%; aspect-ratio: 3 / 4;
+  width: 100%; aspect-ratio: 1 / 1;
   border-bottom: 1px solid var(--border);
+  /* As a column flex item this gets min-height:auto, whose content-based
+     minimum is the photo's own scaled height — that silently beats
+     aspect-ratio and lets a portrait shot render tall. */
+  min-height: 0;
 }
-/* `contain`, not `cover`: the point of the picture is to identify the garment,
-   and cropping a photo to fill the frame is exactly how you lose the collar or
-   the pattern that tells two shirts apart. The letterboxing shows the item's
-   own color, which is information rather than filler. */
+/* Square, filled edge to edge. `cover` centre-crops whatever the camera gave
+   us so every card is the same shape regardless of how the photo was framed;
+   garments are shot centred, so the crop takes background rather than sleeve. */
 .item-thumb img {
-  width: 100%; height: 100%; object-fit: contain; display: block;
-  background: var(--surface-2);
+  width: 100%; height: 100%; object-fit: cover; object-position: center;
+  display: block; background: var(--surface-2);
 }
 
 .item-body { padding: 10px 12px 12px; min-width: 0; display: flex; flex-direction: column; }

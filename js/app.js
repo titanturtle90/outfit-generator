@@ -707,6 +707,14 @@
       return;
     }
 
+    if (Cloud.loadFailed()) {
+      card.dataset.state = 'signed-out';
+      $('#sync-detail').textContent =
+        'Could not reach Firebase, so this is your local copy of the closet on ' +
+        'this device. Changes stay here until you reload with a connection.';
+      return;
+    }
+
     const user = Cloud.currentUser();
     if (!user) {
       card.dataset.state = 'signed-out';

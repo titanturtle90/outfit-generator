@@ -19,6 +19,7 @@ const Cloud = (function () {
   const MAX_DOC_BYTES = 900000;   // Firestore's hard limit is 1 MiB per document
 
   let auth = null, db = null, user = null;
+  let loadError = null;   // set when the SDK cannot be fetched at all
   let unsubscribes = [];
   let changeHandler = null;
   let statusHandler = null;
@@ -78,8 +79,16 @@ const Cloud = (function () {
    */
   function boot() {
     if (!configured()) return Promise.resolve(null);
-    return loadSdk().then(start).catch(err => { console.error(err); return null; });
+    return loadSdk().then(start).catch(err => {
+      // Offline, or the CDN is unreachable. The app still runs on the local
+      // store; the UI says so rather than quietly showing a stale closet.
+      console.error(err);
+      loadError = err;
+      return null;
+    });
   }
+
+  const loadFailed = () => !!loadError;
 
   function start() {
     firebase.initializeApp(FIREBASE_CONFIG);
@@ -395,7 +404,7 @@ const Cloud = (function () {
   const currentUser = () => user;
 
   return {
-    configured, usingPlaceholders, available, boot, signIn, signOut, currentUser, onAuthChange,
+    configured, usingPlaceholders, available, loadFailed, boot, signIn, signOut, currentUser, onAuthChange,
     onRemoteChange, onStatus, uploadLocal, isEmpty,
     getItems, getItem, putItem, deleteItem,
     getOutfits, getOutfit, putOutfit, deleteOutfit,

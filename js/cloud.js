@@ -34,8 +34,23 @@ const Cloud = (function () {
   const SDK_VERSION = '12.18.0';
   const SDK_PARTS = ['app', 'auth', 'firestore'];
 
-  const configured = () =>
+  const filled = () =>
     typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG && !!FIREBASE_CONFIG.apiKey;
+
+  /**
+   * Example values pasted in place of real ones. Left to run, Firebase happily
+   * initialises and sends sign-in to a project that is not yours, and Google
+   * answers with a bare "the requested action is invalid" that says nothing
+   * about the cause. Catching it here turns that into a useful message.
+   */
+  function usingPlaceholders() {
+    if (!filled()) return false;
+    const values = [FIREBASE_CONFIG.apiKey, FIREBASE_CONFIG.authDomain,
+                    FIREBASE_CONFIG.projectId, FIREBASE_CONFIG.appId].map(v => String(v || ''));
+    return values.some(v => /your-project|\.\.\.|…|123456789:web:abc123|^AIzaSy\W*$/.test(v));
+  }
+
+  const configured = () => filled() && !usingPlaceholders();
 
   const available = () => configured() && typeof firebase !== 'undefined';
 
@@ -380,7 +395,7 @@ const Cloud = (function () {
   const currentUser = () => user;
 
   return {
-    configured, available, boot, signIn, signOut, currentUser, onAuthChange,
+    configured, usingPlaceholders, available, boot, signIn, signOut, currentUser, onAuthChange,
     onRemoteChange, onStatus, uploadLocal, isEmpty,
     getItems, getItem, putItem, deleteItem,
     getOutfits, getOutfit, putOutfit, deleteOutfit,

@@ -690,6 +690,15 @@
     const card = $('#sync-card');
     if (!card) return;
 
+    if (Cloud.usingPlaceholders()) {
+      card.dataset.state = 'unconfigured';
+      $('#sync-detail').textContent =
+        'js/firebase-config.js still holds the example values, not your own project\'s. ' +
+        'Copy the real ones from the Firebase console: Project settings → General → ' +
+        'Your apps → SDK setup and configuration → Config.';
+      return;
+    }
+
     if (!Cloud.configured()) {
       card.dataset.state = 'unconfigured';
       $('#sync-detail').textContent =

@@ -122,8 +122,12 @@ JPEG is 60–120KB against a 1 GiB allowance, so a large closet uses a few MB.
 6. **Project settings (gear) → Your apps → Web (`</>`)**, register the app, and
    copy the `firebaseConfig` values.
 
-**In this repo:** paste `apiKey`, `authDomain`, `projectId` and `appId` into
-[`js/firebase-config.js`](js/firebase-config.js), then commit and push.
+**In this repo:** copy `apiKey`, `authDomain`, `projectId` and `appId` from that
+snippet into [`js/firebase-config.js`](js/firebase-config.js), then commit and
+push. Use the values from *your* console — the placeholders in that file are
+shaped like the real thing but belong to no project, and sign-in fails with
+Google's unhelpful "the requested action is invalid" if they are left in. The
+app checks for them and says so in Settings.
 
 **On each device:** open the app → **Settings → Sign in with Google**.
 

@@ -34,7 +34,16 @@ To put it online, push this repo and turn on **GitHub Pages** (Settings → Page
    after another, and the panel closes itself when the last one is saved. Each
    item gets a name, a category, and a color the app reads off the photo. The
    four swatches next to the picker are the other colors it found, in case it
-   grabbed your wall instead of your shirt.
+   grabbed your wall instead of your shirt. **Style** (polo, button-down,
+   chinos, boots…) and **brand** are optional; the style list follows the
+   category, so shirts offer shirt styles and shoes offer shoe styles. Pick a
+   category filter and chips appear for the styles you actually own, so you can
+   pull up just the polos.
+
+   Editing an item is where benching and deleting live: tap the pencil on a
+   card. Unchecking **In rotation** benches it — kept in the closet, left out
+   of outfits — which is what you want for laundry, seasonal pieces, or a shirt
+   you have gone off.
 2. **This Week** — four outfits, generated. Each shows why it was picked.
    - **Shuffle** re-rolls one day, avoiding what the other days are using.
    - **Lock** pins a day you like so regenerating leaves it alone.

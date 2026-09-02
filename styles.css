@@ -241,6 +241,11 @@ select, textarea {
 }
 .field input:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 
+.field-row { display: flex; gap: 12px; }
+.field-row .field { flex: 1; min-width: 0; }
+
+.style-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: -8px 0 18px; }
+
 .color-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 input[type=color] {
   width: 46px; height: 34px; padding: 2px; cursor: pointer;

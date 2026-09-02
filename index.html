@@ -65,6 +65,8 @@
       </div>
     </div>
 
+    <div class="style-filters hidden" id="style-filters"></div>
+
     <form id="add-form" class="card add-card">
       <div class="drop-zone" id="drop-zone" tabindex="0">
         <input type="file" id="file-input" accept="image/*" multiple hidden>
@@ -83,13 +85,25 @@
           <input type="text" id="item-name" placeholder="Light blue oxford" autocomplete="off" required>
         </label>
 
+        <div class="field-row">
+          <label class="field">
+            <span>Category</span>
+            <select id="item-category">
+              <option value="shirt">Shirt</option>
+              <option value="pants">Pants</option>
+              <option value="shoes">Shoes</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Style</span>
+            <select id="item-style"></select>
+          </label>
+        </div>
+
         <label class="field">
-          <span>Category</span>
-          <select id="item-category">
-            <option value="shirt">Shirt</option>
-            <option value="pants">Pants</option>
-            <option value="shoes">Shoes</option>
-          </select>
+          <span>Brand <em class="muted">optional</em></span>
+          <input type="text" id="item-brand" placeholder="e.g. Uniqlo" autocomplete="off">
         </label>
 
         <div class="field">

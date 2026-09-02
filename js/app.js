@@ -7,6 +7,19 @@
   const $ = sel => document.querySelector(sel);
   const $$ = sel => Array.from(document.querySelectorAll(sel));
 
+  /*
+   * Styles worth separating within a category. Chosen to be the distinctions
+   * that change how a piece is worn rather than an exhaustive taxonomy — a
+   * polo and a button-down are different clothes; two button-downs are not.
+   * "Other" is deliberate: an item that fits nothing here should not be forced
+   * into a bad label, and every style is optional anyway.
+   */
+  const STYLES = {
+    shirt: ['Button-down', 'Polo', 'T-shirt', 'Sweater', 'Other'],
+    pants: ['Chinos', 'Jeans', 'Dress', 'Shorts', 'Other'],
+    shoes: ['Loafers', 'Dress', 'Boots', 'Sneakers', 'Other']
+  };
+
   const state = {
     items: [],
     outfits: [],          // every outfit ever generated or worn, keyed by date
@@ -17,6 +30,7 @@
     colorTouched: false,  // user has set the colour by hand; auto-detect must not overwrite it
     queue: [],            // extra files dropped in one go, added one at a time
     filter: 'all',
+    styleFilter: '',
     syncStatus: 'synced'
   };
 
@@ -87,6 +101,7 @@
 
   function renderAll() {
     renderWeek();
+    renderStyleFilters();
     renderCloset();
     renderHistory();
   }
@@ -381,6 +396,15 @@
 
   /* ---------------------- closet ---------------------- */
 
+  /** Refill the style menu for a category, keeping the choice if it still fits. */
+  function renderStyleOptions(category, selected) {
+    const sel = $('#item-style');
+    const options = STYLES[category] || [];
+    sel.innerHTML = '<option value="">Unspecified</option>' +
+      options.map(o => `<option value="${o}">${o}</option>`).join('');
+    sel.value = options.indexOf(selected) >= 0 ? selected : '';
+  }
+
   function setAddPanel(open) {
     const form = $('#add-form');
     const toggle = $('#add-toggle');
@@ -427,6 +451,11 @@
     zone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
     input.addEventListener('change', () => { handleFiles(input.files); input.value = ''; });
 
+    $('#item-category').addEventListener('change', e => {
+      renderStyleOptions(e.target.value, $('#item-style').value);
+    });
+    renderStyleOptions($('#item-category').value, '');
+
     $('#item-color').addEventListener('input', e => {
       state.colorTouched = true;
       $('#color-name').textContent = Color.name(e.target.value);
@@ -442,9 +471,19 @@
 
     $$('.closet-filters .chip').forEach(chip => chip.addEventListener('click', () => {
       state.filter = chip.dataset.filter;
+      state.styleFilter = '';          // a style from the old category means nothing here
       $$('.closet-filters .chip').forEach(c => c.classList.toggle('is-active', c === chip));
+      renderStyleFilters();
       renderCloset();
     }));
+
+    $('#style-filters').addEventListener('click', e => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      state.styleFilter = chip.dataset.style === state.styleFilter ? '' : chip.dataset.style;
+      renderStyleFilters();
+      renderCloset();
+    });
 
     $('#closet-grid').addEventListener('click', e => {
       const card = e.target.closest('.item-card');
@@ -545,6 +584,8 @@
     const item = Object.assign({}, base, {
       name,
       category: $('#item-category').value,
+      style: $('#item-style').value || '',
+      brand: $('#item-brand').value.trim(),
       color: $('#item-color').value,
       inRotation: $('#item-rotation').checked
     });
@@ -557,6 +598,7 @@
 
       const next = state.queue.shift();
       resetForm();
+      renderStyleFilters();
       renderCloset();
       replanWeek();
       toast(`${saved.name} saved.`);
@@ -572,6 +614,8 @@
     state.colorTouched = true;
     $('#item-name').value = item.name;
     $('#item-category').value = item.category;
+    renderStyleOptions(item.category, item.style || '');
+    $('#item-brand').value = item.brand || '';
     $('#item-color').value = item.color;
     $('#color-name').textContent = Color.name(item.color);
     $('#item-rotation').checked = item.inRotation !== false;
@@ -595,6 +639,7 @@
     state.colorTouched = false;
     $('#add-form').reset();
     $('#item-rotation').checked = true;
+    renderStyleOptions($('#item-category').value, '');
     $('#preview').classList.add('hidden');
     $('#preview').src = '';
     $('#drop-hint').classList.remove('hidden');
@@ -620,15 +665,52 @@
         state.outfits = state.outfits.filter(o => !orphaned.includes(o));
         resetForm();
         setAddPanel(false);
+        renderStyleFilters();
         renderCloset();
         replanWeek();
       });
+  }
+
+  /**
+   * Style chips for the chosen category, listing only styles actually present
+   * in the closet — an empty "Polo" filter helps nobody. Hidden entirely on
+   * "All", where styles from different categories would be mixed together.
+   */
+  function renderStyleFilters() {
+    const wrap = $('#style-filters');
+    const category = state.filter;
+
+    if (category === 'all') {
+      wrap.classList.add('hidden');
+      wrap.innerHTML = '';
+      return;
+    }
+
+    const present = (STYLES[category] || [])
+      .filter(style => state.items.some(i => i.category === category && i.style === style));
+    const unlabelled = state.items.some(i => i.category === category && !i.style);
+
+    if (!present.length) {
+      wrap.classList.add('hidden');
+      wrap.innerHTML = '';
+      return;
+    }
+
+    const chip = (value, label) =>
+      `<button class="chip${state.styleFilter === value ? ' is-active' : ''}" ` +
+      `data-style="${value}">${label}</button>`;
+
+    wrap.innerHTML = present.map(st => chip(st, st)).join('') +
+      (unlabelled ? chip('__none', 'Unspecified') : '');
+    wrap.classList.remove('hidden');
   }
 
   function renderCloset() {
     const grid = $('#closet-grid');
     const list = state.items
       .filter(i => state.filter === 'all' || i.category === state.filter)
+      .filter(i => !state.styleFilter ||
+        (state.styleFilter === '__none' ? !i.style : i.style === state.styleFilter))
       .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
 
     $('#closet-empty').classList.toggle('hidden', list.length > 0);
@@ -652,7 +734,8 @@
         `</div>` +
         `<div class="item-body">` +
           `<strong>${escapeHtml(item.name)}</strong>` +
-          `<span class="muted">${item.category} · ${Color.name(item.color)}` +
+          `<span class="muted">${escapeHtml([item.brand, item.style || item.category,
+              Color.name(item.color)].filter(Boolean).join(' · '))}` +
             `${item.inRotation === false ? ' · benched' : ''}</span>` +
           `<span class="muted small">${plural(item.wearCount || 0, 'wear')} · ${lastText}</span>` +
         `</div>` +

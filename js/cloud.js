@@ -253,6 +253,9 @@ const Cloud = (function () {
   function toDoc(item) {
     const out = Object.assign({}, item);
     delete out.id;
+    // Firestore rejects undefined outright, and items created before a field
+    // existed simply do not have it.
+    Object.keys(out).forEach(k => { if (out[k] === undefined) delete out[k]; });
     if (!item.image) { out.image = null; return Promise.resolve(out); }
     if (typeof item.image === 'string') return fitDocument(item.image).then(u => { out.image = u; return out; });
     return blobToDataUrl(item.image)

@@ -11,10 +11,10 @@
    person read and write their own closet.
    ============================================================= */
 const FIREBASE_CONFIG = {
-  apiKey: 'AIzaSy...',
-  authDomain: 'your-project.firebaseapp.com',
-  projectId: 'your-project',
-  appId: '1:123456789:web:abc123'
+  apiKey: 'AIzaSyAS8lJKU9xfNENPYTDyNuWrtcTxp6_ET5U',
+  authDomain: 'workweek-17eaa.firebaseapp.com',
+  projectId: 'workweek-17eaa',
+  appId: '1:615522068883:web:a4a545d1eb309cf0246066'
 };
 
 /* Set to true only when running against the local Firebase emulators. */

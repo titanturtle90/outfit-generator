@@ -435,6 +435,11 @@
     $('#add-form').addEventListener('submit', e => { e.preventDefault(); saveItem(); });
     $('#cancel-edit').addEventListener('click', () => { resetForm(); setAddPanel(false); });
 
+    $('#delete-item').addEventListener('click', () => {
+      const item = byId(state.editingId);
+      if (item) removeItem(item);
+    });
+
     $$('.closet-filters .chip').forEach(chip => chip.addEventListener('click', () => {
       state.filter = chip.dataset.filter;
       $$('.closet-filters .chip').forEach(c => c.classList.toggle('is-active', c === chip));
@@ -447,12 +452,7 @@
       const item = byId(card.dataset.id);
       if (!item) return;
 
-      if (e.target.closest('[data-action="delete"]')) return removeItem(item);
       if (e.target.closest('[data-action="edit"]')) return editItem(item);
-      if (e.target.closest('[data-action="rotation"]')) {
-        item.inRotation = item.inRotation === false;
-        return Store.putItem(item).then(() => { renderCloset(); replanWeek(); });
-      }
     });
   }
 
@@ -577,6 +577,10 @@
     $('#item-rotation').checked = item.inRotation !== false;
     $('#save-item').textContent = 'Save changes';
     $('#cancel-edit').classList.remove('hidden');
+    $('#delete-item').classList.remove('hidden');
+    const title = $('#edit-title');
+    title.innerHTML = `Editing <strong>${escapeHtml(item.name)}</strong>`;
+    title.classList.remove('hidden');
 
     const img = $('#preview');
     const url = urlFor(item);
@@ -598,6 +602,8 @@
     $('#color-name').textContent = '—';
     $('#save-item').textContent = 'Add to closet';
     $('#cancel-edit').classList.add('hidden');
+    $('#delete-item').classList.add('hidden');
+    $('#edit-title').classList.add('hidden');
   }
 
   function removeItem(item) {
@@ -612,6 +618,8 @@
         forgetUrl(item.id);
         state.items = state.items.filter(i => i.id !== item.id);
         state.outfits = state.outfits.filter(o => !orphaned.includes(o));
+        resetForm();
+        setAddPanel(false);
         renderCloset();
         replanWeek();
       });
@@ -644,13 +652,13 @@
         `</div>` +
         `<div class="item-body">` +
           `<strong>${escapeHtml(item.name)}</strong>` +
-          `<span class="muted">${item.category} · ${Color.name(item.color)}</span>` +
+          `<span class="muted">${item.category} · ${Color.name(item.color)}` +
+            `${item.inRotation === false ? ' · benched' : ''}</span>` +
           `<span class="muted small">${plural(item.wearCount || 0, 'wear')} · ${lastText}</span>` +
         `</div>` +
         `<div class="item-actions">` +
-          `<button class="icon-btn" data-action="rotation" title="${item.inRotation === false ? 'Return to rotation' : 'Bench this item'}">${item.inRotation === false ? '☾' : '✓'}</button>` +
-          `<button class="icon-btn" data-action="edit" title="Edit">✎</button>` +
-          `<button class="icon-btn" data-action="delete" title="Delete">🗑</button>` +
+          `<button class="icon-btn" data-action="edit" title="Edit ${escapeHtml(item.name)}" ` +
+            `aria-label="Edit ${escapeHtml(item.name)}">✎</button>` +
         `</div>`;
       grid.appendChild(el);
     }

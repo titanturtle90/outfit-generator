@@ -256,9 +256,19 @@ input[type=color] {
 .swatch:hover { transform: scale(1.1); }
 
 .add-actions { display: flex; align-items: center; gap: 10px; margin-top: auto; }
-.add-actions .btn-primary { margin-left: auto; }
-.check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; }
-.check input { accent-color: var(--accent); }
+/* Delete sits hard left, away from Save, so it is never a mis-tap. */
+.add-actions #cancel-edit { margin-left: auto; }
+.add-actions #delete-item + #save-item { margin-left: auto; }
+
+.check { display: flex; align-items: flex-start; gap: 7px; font-size: 13px; color: var(--muted); cursor: pointer; }
+.check input { accent-color: var(--accent); margin-top: 2px; flex: none; }
+.check em { font-style: normal; }
+
+.edit-title {
+  margin: 0; font-size: 13px; color: var(--muted);
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.edit-title strong { color: var(--text); font-size: 14px; }
 
 .queue { margin: -12px 0 16px; font-size: 13px; }
 

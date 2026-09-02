@@ -76,6 +76,8 @@
       </div>
 
       <div class="add-fields">
+        <p class="edit-title hidden" id="edit-title"></p>
+
         <label class="field">
           <span>Name</span>
           <input type="text" id="item-name" placeholder="Light blue oxford" autocomplete="off" required>
@@ -99,11 +101,14 @@
           </div>
         </div>
 
+        <label class="check">
+          <input type="checkbox" id="item-rotation" checked>
+          <span>In rotation <em class="muted">— uncheck to bench it: kept in your
+            closet, left out of outfits</em></span>
+        </label>
+
         <div class="add-actions">
-          <label class="check">
-            <input type="checkbox" id="item-rotation" checked>
-            <span>In rotation</span>
-          </label>
+          <button type="button" class="btn btn-danger hidden" id="delete-item">Delete</button>
           <button type="button" class="btn btn-ghost hidden" id="cancel-edit">Cancel</button>
           <button type="submit" class="btn btn-primary" id="save-item">Add to closet</button>
         </div>

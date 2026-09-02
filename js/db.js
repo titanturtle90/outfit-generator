@@ -9,7 +9,6 @@ const DB = (function () {
 
   const DEFAULT_SETTINGS = {
     workDays: [1, 2, 3, 4],   // Mon-Thu (JS day numbers)
-    colorWeight: 0.5,         // 0 = pure variety, 1 = pure color harmony
     minGapDays: 10,           // soft floor before an item repeats
     pairGapDays: 90           // soft floor before a shirt+pants pairing repeats
   };

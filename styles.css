@@ -128,10 +128,6 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px; }
 
 .week-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 
-.slider-wrap { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
-.slider-wrap input { width: 130px; accent-color: var(--accent); }
-.slider-end { white-space: nowrap; }
-
 .day-grid {
   display: grid; gap: 16px;
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));

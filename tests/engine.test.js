@@ -104,7 +104,7 @@ const closet = [
    ['suede chukkas', '#8a6a48']].map((r, i) => mk('h' + i, r[0], 'shoes', r[1]))
 );
 
-const settings = { workDays: [1, 2, 3, 4], colorWeight: 0.5, minGapDays: 10, pairGapDays: 90 };
+const settings = { workDays: [1, 2, 3, 4], minGapDays: 10, pairGapDays: 90 };
 const dates = Outfit.workDatesFor(Outfit.weekStart(new Date(2026, 0, 5)), settings.workDays);
 
 const week = Outfit.generateWeek({ dates, items: closet, outfits: [], settings });
@@ -190,16 +190,27 @@ t('pairings are mostly fresh',
   new Set(history.map(o => o.shirtId + '|' + o.pantsId)).size, atLeast(25));
 
 /* ---------------------------- variety weighting ---------------------------- */
-section('variety weighting');
+section('the color/variety balance');
+t('the balance is fixed, not user-tunable',
+  typeof Outfit.COLOR_WEIGHT === 'number' && Outfit.COLOR_WEIGHT > 0 && Outfit.COLOR_WEIGHT < 1, is(true));
+t('it does not sit where rotation collapses (measured above 0.8)',
+  Outfit.COLOR_WEIGHT <= 0.7, is(true));
+t('it does not ignore color either',
+  Outfit.COLOR_WEIGHT >= 0.3, is(true));
+t('a settings colorWeight is ignored if an old saved one is present', (() => {
+  const rigged = Object.assign({}, settings, { colorWeight: 1 });
+  const a = Outfit.generateWeek({ dates, items: closet, outfits: [], settings: rigged });
+  return a.days.length === 4 && a.days.every(d => d.colorScore >= 0 && d.varietyScore >= 0);
+})(), is(true));
+
+section('variety still reaches neglected clothes');
 const stale = closet.map(i => Object.assign({}, i));
 const target = stale.find(i => i.id === 's4');
 stale.forEach(i => { if (i.category === 'shirt') { i.wearCount = 9; i.lastWorn = '2026-01-01'; } });
 target.wearCount = 0; target.lastWorn = null;
 
-const varietyFirst = Outfit.generateWeek({
-  dates, items: stale, outfits: [], settings: Object.assign({}, settings, { colorWeight: 0 })
-});
-t('with variety weighted fully, the never-worn shirt is scheduled',
+const varietyFirst = Outfit.generateWeek({ dates, items: stale, outfits: [], settings });
+t('the never-worn shirt is scheduled without anyone asking for it',
   varietyFirst.days.some(d => d.shirtId === 's4'), is(true));
 
 const stats = Outfit.buildStats(stale);

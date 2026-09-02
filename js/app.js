@@ -111,15 +111,6 @@
     });
     $('#regenerate').addEventListener('click', () => buildWeek({ force: true }));
 
-    const slider = $('#weight-slider');
-    slider.addEventListener('input', () => {
-      state.settings.colorWeight = Number(slider.value) / 100;
-    });
-    slider.addEventListener('change', () => {
-      Store.saveSettings({ colorWeight: state.settings.colorWeight })
-        .then(() => buildWeek({ force: true }));
-    });
-
     bindClosetEvents();
     bindSettingsEvents();
   }
@@ -215,7 +206,6 @@
     const fmt = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
     const end = new Date(monday); end.setDate(end.getDate() + 6);
     $('#week-range').textContent = `${fmt.format(monday)} – ${fmt.format(end)}`;
-    $('#weight-slider').value = Math.round((1 - state.settings.colorWeight) * 100);
 
     const grid = $('#day-grid');
     const empty = $('#week-empty');
@@ -853,7 +843,6 @@
     });
     $('#min-gap').value = state.settings.minGapDays;
     $('#pair-gap').value = state.settings.pairGapDays;
-    $('#weight-slider').value = Math.round((1 - state.settings.colorWeight) * 100);
   }
 
   function bindSettingsEvents() {

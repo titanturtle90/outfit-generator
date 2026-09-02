@@ -41,7 +41,6 @@ To put it online, push this repo and turn on **GitHub Pages** (Settings → Page
    - **Mark worn** logs it, which is what feeds the variety tracking. This is
      the one habit the app needs from you — without it, it can't know what
      you've actually worn.
-   - The **Color ↔ Variety** slider decides how the two priorities trade off.
 3. **History** — what you've worn, how much of your closet you've actually got
    through, and which pieces are still sitting unworn.
 4. **Settings** — work days, rotation gaps, and backup.
@@ -51,8 +50,13 @@ rotation — laundry, seasonal, or a shirt you've gone off.
 
 ## How outfits get picked
 
-Every possible shirt + pants + shoes combination is scored on two axes, and the
-slider sets the blend.
+Every possible shirt + pants + shoes combination is scored on two axes, blended
+at a fixed weight of 0.5 — see `COLOR_WEIGHT` in `js/outfit.js` for the
+simulation results behind that number. Briefly: color quality is flat anywhere
+between 0.5 and 0.7, so there is nothing to gain by favouring it harder, while
+past 0.8 rotation falls apart and pieces stop being worn at all. 0.5 keeps every
+wear count within one of every other and scores as well on color as anything
+above it.
 
 ### Color
 

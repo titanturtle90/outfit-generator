@@ -29,10 +29,12 @@ To put it online, push this repo and turn on **GitHub Pages** (Settings → Page
 
 ## Using it
 
-1. **Closet** — drop in photos of your shirts, pants and shoes. Drop several at
-   once and they queue up. Each one gets a name, a category, and a color the app
-   reads off the photo. The four swatches next to the picker are the other
-   colors it found, in case it grabbed your wall instead of your shirt.
+1. **Closet** — **Add clothes** opens the entry panel; dragging photos anywhere
+   over the closet opens it too. Drop several at once and they queue up, one
+   after another, and the panel closes itself when the last one is saved. Each
+   item gets a name, a category, and a color the app reads off the photo. The
+   four swatches next to the picker are the other colors it found, in case it
+   grabbed your wall instead of your shirt.
 2. **This Week** — four outfits, generated. Each shows why it was picked.
    - **Shuffle** re-rolls one day, avoiding what the other days are using.
    - **Lock** pins a day you like so regenerating leaves it alone.

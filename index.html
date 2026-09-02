@@ -57,11 +57,16 @@
   <section id="view-closet" class="view">
     <div class="view-head">
       <h2>Closet</h2>
-      <div class="closet-filters">
-        <button class="chip is-active" data-filter="all">All</button>
-        <button class="chip" data-filter="shirt">Shirts</button>
-        <button class="chip" data-filter="pants">Pants</button>
-        <button class="chip" data-filter="shoes">Shoes</button>
+      <div class="closet-head-actions">
+        <div class="closet-filters">
+          <button class="chip is-active" data-filter="all">All</button>
+          <button class="chip" data-filter="shirt">Shirts</button>
+          <button class="chip" data-filter="pants">Pants</button>
+          <button class="chip" data-filter="shoes">Shoes</button>
+        </div>
+        <button class="btn btn-primary" id="add-toggle" aria-expanded="false" aria-controls="add-form">
+          Add clothes
+        </button>
       </div>
     </div>
 

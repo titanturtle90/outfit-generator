@@ -83,6 +83,13 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px; }
   gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
 }
 
+/* The top bar is sticky, so anything scrolled to with scrollIntoView would sit
+   underneath it. Reserve its height on every scroll target. */
+.view-head, .add-card, .day-card, .item-card { scroll-margin-top: 88px; }
+@media (max-width: 640px) {
+  .view-head, .add-card, .day-card, .item-card { scroll-margin-top: 124px; }
+}
+
 /* ---------------- buttons ---------------- */
 
 .btn {
@@ -154,14 +161,19 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px; }
 
 .pieces { display: flex; flex-direction: column; gap: 2px; padding: 0 10px; }
 
-.piece { display: flex; align-items: center; gap: 12px; padding: 7px 6px; border-radius: 9px; }
+.piece { display: flex; align-items: center; gap: 13px; padding: 8px 6px; border-radius: 9px; }
 .piece:hover { background: var(--surface-2); }
 
 .thumb {
-  width: 46px; height: 46px; flex: none;
+  width: 76px; height: 76px; flex: none;
   border-radius: 8px; overflow: hidden; border: 1px solid var(--border);
 }
-.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* `contain` for the same reason as the closet cards: identifying the garment
+   matters more than a tidy edge. */
+.thumb img {
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  background: var(--surface-2);
+}
 
 .piece-meta { display: flex; flex-direction: column; min-width: 0; }
 .piece-meta strong { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -195,7 +207,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px; }
   border-radius: var(--radius); box-shadow: var(--shadow);
 }
 
-.add-card { display: flex; gap: 20px; padding: 18px; margin-bottom: 24px; flex-wrap: wrap; }
+.add-card { display: none; gap: 20px; padding: 18px; margin-bottom: 24px; flex-wrap: wrap; }
+.add-card.is-open { display: flex; }
+
+.closet-head-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 .drop-zone {
   width: 180px; height: 180px; flex: none;
@@ -362,6 +377,8 @@ input[type=color] {
   .add-card { flex-direction: column; }
   .drop-zone { width: 100%; height: 150px; }
   .closet-grid { gap: 10px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .closet-head-actions { width: 100%; justify-content: space-between; }
+  .view-head h2 { width: 100%; }
 }
 
 /* ---------------- sync ---------------- */

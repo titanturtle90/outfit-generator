@@ -391,9 +391,38 @@
 
   /* ---------------------- closet ---------------------- */
 
+  function setAddPanel(open) {
+    const form = $('#add-form');
+    const toggle = $('#add-toggle');
+    form.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.textContent = open ? 'Close' : 'Add clothes';
+    if (open) form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  const addPanelOpen = () => $('#add-form').classList.contains('is-open');
+
+  const revealCloset = () =>
+    $('#view-closet .view-head').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
   function bindClosetEvents() {
     const zone = $('#drop-zone');
     const input = $('#file-input');
+
+    $('#add-toggle').addEventListener('click', () => {
+      const opening = !addPanelOpen();
+      if (!opening) resetForm();          // closing discards a half-filled entry
+      setAddPanel(opening);
+      if (opening) $('#item-name').focus({ preventScroll: true });
+    });
+
+    // Dragging photos anywhere over the closet opens the panel for you, so the
+    // drop target is not hidden behind a button press.
+    $('#view-closet').addEventListener('dragover', e => {
+      if (!addPanelOpen() && e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) {
+        setAddPanel(true);
+      }
+    });
 
     zone.addEventListener('click', () => input.click());
     zone.addEventListener('keydown', e => {
@@ -414,7 +443,7 @@
     });
 
     $('#add-form').addEventListener('submit', e => { e.preventDefault(); saveItem(); });
-    $('#cancel-edit').addEventListener('click', resetForm);
+    $('#cancel-edit').addEventListener('click', () => { resetForm(); setAddPanel(false); });
 
     $$('.closet-filters .chip').forEach(chip => chip.addEventListener('click', () => {
       state.filter = chip.dataset.filter;
@@ -543,7 +572,7 @@
       toast(`${saved.name} saved.`);
 
       if (next) { loadIntoForm(next); renderQueue(); }
-      else { renderQueue(); }
+      else { renderQueue(); setAddPanel(false); revealCloset(); }
     });
   }
 
@@ -562,6 +591,7 @@
     const img = $('#preview');
     const url = urlFor(item);
     if (url) { img.src = url; img.classList.remove('hidden'); $('#drop-hint').classList.add('hidden'); }
+    setAddPanel(true);
     $('#add-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 

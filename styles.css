@@ -246,14 +246,29 @@ select, textarea {
 
 .style-filters { display: flex; gap: 6px; flex-wrap: wrap; margin: -8px 0 18px; }
 
-.color-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-input[type=color] {
-  width: 46px; height: 34px; padding: 2px; cursor: pointer;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--bg);
-}
-.color-name { font-size: 13px; min-width: 90px; }
+.color-row { display: flex; align-items: center; gap: 9px; }
+.color-row input { flex: 1; min-width: 0; }
 
-.swatch-suggestions { display: flex; gap: 5px; }
+/* Shows the colour the typed word resolved to, so a wrong guess is obvious. */
+.color-chip {
+  width: 34px; height: 34px; flex: none;
+  border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2);
+}
+.color-chip.is-unknown {
+  background: repeating-linear-gradient(45deg,
+    var(--surface-2), var(--surface-2) 4px, var(--border) 4px, var(--border) 8px);
+}
+
+.color-note { font-size: 11.5px; min-height: 14px; }
+.color-note.is-warning { color: var(--danger); }
+
+.name-preview {
+  margin: 0; font-size: 13px; color: var(--muted);
+  padding: 9px 11px; border-radius: 9px; background: var(--surface-2);
+}
+.name-preview strong { color: var(--text); font-weight: 600; }
+
+.swatch-suggestions { display: flex; gap: 5px; margin-top: 7px; }
 .swatch {
   width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
   border: 1px solid var(--border);

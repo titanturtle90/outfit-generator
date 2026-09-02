@@ -27,8 +27,9 @@
     viewMonday: Outfit.weekStart(new Date()),
     editingId: null,
     pendingImage: null,   // resized Blob for the item being added
-    colorTouched: false,  // user has set the colour by hand; auto-detect must not overwrite it
-    autoName: '',         // the last name we generated, so a hand-written one is never overwritten
+    colorTouched: false,  // user typed a colour; auto-detect must not overwrite it
+    colorHex: '#8a8f98',  // what the typed colour resolved to — the value outfits are scored on
+    detected: null,       // { hex, name } read from the photo
     queue: [],            // extra files dropped in one go, added one at a time
     filter: 'all',
     styleFilter: '',
@@ -400,30 +401,78 @@
   const titleCase = str => str.replace(/\b[a-z]/g, c => c.toUpperCase());
 
   /**
-   * Names are built from what you entered: brand, then type, then colour —
-   * "Uniqlo Polo Navy". Type is the style when there is one and the category
-   * otherwise, so an unlabelled item still reads as "Uniqlo Shirt Navy" rather
-   * than just a colour.
+   * The item's name, built from what you entered: brand, then type, then
+   * colour — "Uniqlo Polo Navy". There is no name field; this is the name.
+   * Type is the style where one is set and the category otherwise, so an
+   * unlabelled piece still reads as "Uniqlo Shirt Navy" rather than a colour
+   * on its own.
    */
   function composeName() {
     const brand = $('#item-brand').value.trim();
     const style = $('#item-style').value;
-    const category = $('#item-category').value;
-    const type = style || titleCase(category);
-    const color = titleCase(Color.name($('#item-color').value));
+    const type = style || titleCase($('#item-category').value);
+    const color = titleCase(Color.name(state.colorHex));
     return [brand, type, color].filter(Boolean).join(' ');
   }
 
   /**
-   * Regenerate the name, unless the field holds something the user wrote
-   * themselves. Comparing against the last generated value is what tells the
-   * two apart: anything else in the box was typed, and is left alone.
+   * Resolve the typed colour and reflect it: the chip shows the shade, the
+   * note explains a word we could not place, and the preview shows the name
+   * the item will be saved under.
+   *
+   * A word that means nothing leaves the previous colour in force rather than
+   * guessing, so a half-typed "nav" never turns the shirt grey.
    */
-  function refreshAutoName() {
-    const field = $('#item-name');
-    if (field.value && field.value !== state.autoName) return;
-    state.autoName = composeName();
-    field.value = state.autoName;
+  /**
+   * Whether the box currently says something we can turn into a colour: a name
+   * or hex we understand, or the exact word we read off the photo. One
+   * definition, used both for the live feedback and for refusing to save, so
+   * the warning and the guard can never disagree.
+   */
+  function colorIsKnown() {
+    const typed = $('#item-color').value.trim().toLowerCase();
+    if (!typed) return false;
+    if (Color.parse(typed)) return true;
+    return !!(state.detected && typed === state.detected.name);
+  }
+
+  function refreshColor() {
+    const typed = $('#item-color').value;
+    const chip = $('#color-chip');
+    const note = $('#color-note');
+
+    // While the box still holds what we read off the photo, keep the photo's
+    // exact shade: it is truer than the representative value behind the word.
+    if (state.detected && typed.trim().toLowerCase() === state.detected.name) {
+      state.colorHex = state.detected.hex;
+    } else {
+      const parsed = Color.parse(typed);
+      if (parsed) state.colorHex = parsed;
+    }
+
+    const known = !typed.trim() || colorIsKnown();
+    chip.style.background = known ? state.colorHex : '';
+    chip.classList.toggle('is-unknown', !known);
+    note.textContent = known ? '' : `Don't know "${typed.trim()}" — using ${Color.name(state.colorHex)}.`;
+    note.classList.toggle('is-warning', !known);
+
+    const preview = $('#name-preview');
+    if (!typed.trim()) {
+      preview.textContent = '';
+      preview.classList.add('hidden');
+    } else {
+      preview.innerHTML = `Saves as <strong>${escapeHtml(composeName())}</strong>`;
+      preview.classList.remove('hidden');
+    }
+  }
+
+  /** Set the colour box from a hex, e.g. a detected swatch. */
+  function setColorFromHex(hex, { detected = false } = {}) {
+    state.colorHex = hex;
+    const label = Color.name(hex);
+    if (detected) state.detected = { hex, name: label };
+    $('#item-color').value = label;
+    refreshColor();
   }
 
   /** Refill the style menu for a category, keeping the choice if it still fits. */
@@ -441,7 +490,6 @@
     form.classList.toggle('is-open', open);
     toggle.setAttribute('aria-expanded', String(open));
     toggle.textContent = open ? 'Close' : 'Add clothes';
-    if (open) form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   const addPanelOpen = () => $('#add-form').classList.contains('is-open');
@@ -457,7 +505,7 @@
       const opening = !addPanelOpen();
       if (!opening) resetForm();          // closing discards a half-filled entry
       setAddPanel(opening);
-      if (opening) $('#item-name').focus({ preventScroll: true });
+      if (opening) $('#item-brand').focus({ preventScroll: true });
     });
 
     // Dragging photos anywhere over the closet opens the panel for you, so the
@@ -483,17 +531,22 @@
 
     $('#item-category').addEventListener('change', e => {
       renderStyleOptions(e.target.value, $('#item-style').value);
-      refreshAutoName();
+      refreshColor();
     });
-    $('#item-style').addEventListener('change', refreshAutoName);
-    $('#item-brand').addEventListener('input', refreshAutoName);
+    $('#item-style').addEventListener('change', refreshColor);
+    $('#item-brand').addEventListener('input', refreshColor);
     renderStyleOptions($('#item-category').value, '');
 
-    $('#item-color').addEventListener('input', e => {
+    $('#item-color').addEventListener('input', () => {
       state.colorTouched = true;
-      $('#color-name').textContent = Color.name(e.target.value);
-      refreshAutoName();
+      refreshColor();
     });
+
+    // Offer every colour the app understands as you type.
+    $('#color-list').innerHTML =
+      Color.paletteNames().map(n => `<option value="${n}"></option>`).join('');
+
+    refreshColor();
 
     $('#add-form').addEventListener('submit', e => { e.preventDefault(); saveItem(); });
     $('#cancel-edit').addEventListener('click', () => { resetForm(); setAddPanel(false); });
@@ -570,14 +623,10 @@
       img.classList.remove('hidden');
       $('#drop-hint').classList.add('hidden');
 
-      // Extraction finished after the user already chose a colour — leave it alone.
-      if (!state.colorTouched) {
-        $('#item-color').value = palette[0];
-        $('#color-name').textContent = Color.name(palette[0]);
-      }
+      // Extraction finished after the user already typed a colour — leave it alone.
+      if (!state.colorTouched) setColorFromHex(palette[0], { detected: true });
       renderSuggestions(palette);
 
-      refreshAutoName();
       $('#item-brand').focus();
     }).catch(err => toast(err.message));
   }
@@ -593,9 +642,7 @@
       b.title = Color.name(hex);
       b.addEventListener('click', () => {
         state.colorTouched = true;
-        $('#item-color').value = hex;
-        $('#color-name').textContent = Color.name(hex);
-        refreshAutoName();
+        setColorFromHex(hex);
       });
       wrap.appendChild(b);
     });
@@ -609,8 +656,17 @@
   }
 
   function saveItem() {
-    const name = $('#item-name').value.trim();
-    if (!name) { toast('Give it a name.'); return; }
+    if (!$('#item-color').value.trim()) {
+      toast('Give it a colour — or drop a photo and it will read one for you.');
+      $('#item-color').focus();
+      return;
+    }
+    if (!colorIsKnown()) {
+      toast('That colour is not one I know — try a plain name like navy or khaki.');
+      $('#item-color').focus();
+      return;
+    }
+    const name = composeName();
 
     const base = state.editingId ? byId(state.editingId) : {};
     const item = Object.assign({}, base, {
@@ -618,7 +674,7 @@
       category: $('#item-category').value,
       style: $('#item-style').value || '',
       brand: $('#item-brand').value.trim(),
-      color: $('#item-color').value,
+      color: state.colorHex,
       inRotation: $('#item-rotation').checked
     });
     if (state.pendingImage) item.image = state.pendingImage;
@@ -643,14 +699,12 @@
   function editItem(item) {
     state.editingId = item.id;
     state.pendingImage = null;
-    state.colorTouched = true;
-    $('#item-name').value = item.name;
     $('#item-category').value = item.category;
     renderStyleOptions(item.category, item.style || '');
     $('#item-brand').value = item.brand || '';
-    $('#item-color').value = item.color;
-    state.autoName = composeName();
-    $('#color-name').textContent = Color.name(item.color);
+    state.detected = null;
+    state.colorTouched = true;
+    setColorFromHex(item.color);
     $('#item-rotation').checked = item.inRotation !== false;
     $('#save-item').textContent = 'Save changes';
     $('#cancel-edit').classList.remove('hidden');
@@ -673,12 +727,14 @@
     $('#add-form').reset();
     $('#item-rotation').checked = true;
     renderStyleOptions($('#item-category').value, '');
-    state.autoName = '';
+    state.detected = null;
+    state.colorHex = '#8a8f98';
+    $('#item-color').value = '';
+    refreshColor();
     $('#preview').classList.add('hidden');
     $('#preview').src = '';
     $('#drop-hint').classList.remove('hidden');
     $('#swatch-suggestions').innerHTML = '';
-    $('#color-name').textContent = '—';
     $('#save-item').textContent = 'Add to closet';
     $('#cancel-edit').classList.add('hidden');
     $('#delete-item').classList.add('hidden');

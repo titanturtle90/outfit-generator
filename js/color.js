@@ -123,13 +123,13 @@ const Color = (function () {
     if (h >= 195 && h <= 255 && l < 0.32) return 'navy';
     if (h >= 195 && h <= 250 && s < 0.60 && l >= 0.32 && l <= 0.65) return 'denim blue';
     if (h >= 50 && h <= 110 && s < 0.55 && l < 0.50) return 'olive';
-    if (h >= 20 && h <= 55 && s < 0.45 && l > 0.55) return 'khaki';
+    if (h >= 15 && h <= 50 && l > 0.80 && s < 0.60) return 'cream';
+    if (h >= 20 && h <= 55 && s < 0.45 && l > 0.55 && l <= 0.80) return 'khaki';
     if (h >= 10 && h <= 40 && s < 0.70 && l < 0.35) return 'brown';
     if (h >= 5 && h <= 30 && s >= 0.30 && l >= 0.30 && l <= 0.52) return 'rust';
     if (h >= 20 && h <= 50 && s < 0.55 && l >= 0.30 && l <= 0.55) return 'tan';
     if (h >= 340 || h <= 12) { if (l < 0.35) return 'burgundy'; }
     if ((h >= 330 || h <= 18) && l > 0.70) return 'pink';
-    if (h >= 15 && h <= 45 && l > 0.80 && s < 0.60) return 'cream';
 
     let base = 'color';
     for (const [limit, n] of HUE_NAMES) { if (h <= limit) { base = n; break; } }
@@ -138,6 +138,100 @@ const Color = (function () {
     if (l < 0.30) return 'dark ' + base;
     if (s < 0.30) return 'muted ' + base;
     return base;
+  }
+
+  /* ---------------------- parsing a typed color ---------------------- */
+
+  /**
+   * Garment colors people actually say, each mapped to a representative shade.
+   * Every entry round-trips: name(NAMED[x]) === x, which a test enforces, so
+   * what you type is what the app calls it back to you.
+   */
+  const NAMED = {
+    'white': '#f2f2f0',
+    'cream': '#eadfc8',
+    'light grey': '#c8cace',
+    'grey': '#8a8f98',
+    'charcoal': '#3a3d44',
+    'black': '#1a1a1c',
+    'navy': '#22304d',
+    'denim blue': '#4a6fa5',
+    'sky blue': '#a8c4e0',
+    'blue': '#2b6cb0',
+    'teal': '#2b6f6a',
+    'olive': '#556b2f',
+    'green': '#2f7a3f',
+    'dark green': '#1a4d2e',
+    'khaki': '#c4b08b',
+    'tan': '#a8814f',
+    'brown': '#5a3b23',
+    'rust': '#8a3f2f',
+    'burgundy': '#7d2230',
+    'red': '#cc2222',
+    'pink': '#e6bec4',
+    'orange': '#e8862e',
+    'yellow': '#d4a017',
+    'violet': '#6b4a8a',
+    'magenta': '#a9459b'
+  };
+
+  // Words people use for the same thing.
+  const SYNONYMS = {
+    'gray': 'grey', 'light gray': 'light grey', 'off-white': 'cream',
+    'off white': 'cream', 'ivory': 'cream', 'ecru': 'cream', 'beige': 'khaki',
+    'stone': 'khaki', 'sand': 'khaki', 'camel': 'tan', 'maroon': 'burgundy',
+    'wine': 'burgundy', 'oxblood': 'burgundy', 'light blue': 'sky blue',
+    'pale blue': 'sky blue', 'denim': 'denim blue', 'indigo': 'navy',
+    'chocolate': 'brown', 'coffee': 'brown', 'terracotta': 'rust',
+    'purple': 'violet', 'lilac': 'violet', 'mustard': 'yellow',
+    'forest green': 'dark green', 'bottle green': 'dark green',
+    'racing green': 'dark green', 'emerald': 'green', 'sage': 'olive',
+    'slate': 'grey', 'dark blue': 'navy', 'midnight': 'navy', 'silver': 'light grey', 'ash': 'light grey'
+  };
+
+  /** Every name worth offering as a suggestion, alphabetically. */
+  const paletteNames = () =>
+    Object.keys(NAMED).concat(Object.keys(SYNONYMS)).sort();
+
+  /**
+   * Turn typed text into a color. Accepts a name, a synonym, a light/dark
+   * modifier on either, or a raw hex. Returns null when it means nothing, so
+   * the caller can say so rather than silently picking something wrong.
+   */
+  function parse(text) {
+    if (!text) return null;
+    const raw = String(text).trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!raw) return null;
+
+    if (/^#?[0-9a-f]{6}$/.test(raw)) return '#' + raw.replace('#', '');
+    if (/^#?[0-9a-f]{3}$/.test(raw)) {
+      const h = raw.replace('#', '');
+      return '#' + h.split('').map(c => c + c).join('');
+    }
+
+    const direct = NAMED[raw] || NAMED[SYNONYMS[raw]];
+    if (direct) return direct;
+
+    // "light olive", "dark khaki", "pale pink" and so on.
+    const m = raw.match(/^(light|pale|dark|deep|bright|muted)\s+(.*)$/);
+    if (!m) return null;
+    const base = NAMED[m[2]] || NAMED[SYNONYMS[m[2]]];
+    if (!base) return null;
+
+    const { h, s, l } = hexToHsl(base);
+    const shift = { light: 0.18, pale: 0.24, dark: -0.16, deep: -0.20 };
+    if (m[1] === 'bright') return hslToHexLocal(h, Math.min(1, s + 0.25), l);
+    if (m[1] === 'muted') return hslToHexLocal(h, Math.max(0, s - 0.25), l);
+    return hslToHexLocal(h, s, Math.max(0.04, Math.min(0.96, l + shift[m[1]])));
+  }
+
+  function hslToHexLocal(h, s, l) {
+    const c = (1 - Math.abs(2 * l - 1)) * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = l - c / 2;
+    const t = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x]
+            : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    return rgbToHex((t[0] + m) * 255, (t[1] + m) * 255, (t[2] + m) * 255);
   }
 
   /* ---------------------- extraction from a photo ---------------------- */
@@ -382,7 +476,7 @@ const Color = (function () {
   return {
     hexToRgb, rgbToHex, rgbToHsl, hexToHsl, luminance, hueDistance,
     tier, isNeutralish, isBlackFamily, isBrownFamily,
-    name, extractPalette, distance,
+    name, parse, paletteNames, NAMED, extractPalette, distance,
     pairScore, shoeScore, contrastText
   };
 })();

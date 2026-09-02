@@ -80,11 +80,6 @@
       <div class="add-fields">
         <p class="edit-title hidden" id="edit-title"></p>
 
-        <label class="field">
-          <span>Name <em class="muted">— built from brand, type and colour; edit if you like</em></span>
-          <input type="text" id="item-name" placeholder="Uniqlo Polo Navy" autocomplete="off" required>
-        </label>
-
         <div class="field-row">
           <label class="field">
             <span>Category</span>
@@ -106,14 +101,19 @@
           <input type="text" id="item-brand" placeholder="e.g. Uniqlo" autocomplete="off">
         </label>
 
-        <div class="field">
-          <span>Color <em class="muted">auto-detected, adjust if wrong</em></span>
+        <label class="field">
+          <span>Color <em class="muted">— read from the photo; type over it if it's wrong</em></span>
           <div class="color-row">
-            <input type="color" id="item-color" value="#7f8c9b">
-            <output id="color-name" class="color-name">&mdash;</output>
-            <div class="swatch-suggestions" id="swatch-suggestions"></div>
+            <span class="color-chip" id="color-chip"></span>
+            <input type="text" id="item-color" list="color-list" placeholder="navy"
+                   autocomplete="off" autocapitalize="none" spellcheck="false" required>
           </div>
-        </div>
+          <datalist id="color-list"></datalist>
+          <div class="swatch-suggestions" id="swatch-suggestions"></div>
+          <span class="color-note muted" id="color-note"></span>
+        </label>
+
+        <p class="name-preview" id="name-preview"></p>
 
         <label class="check">
           <input type="checkbox" id="item-rotation" checked>

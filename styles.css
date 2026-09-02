@@ -94,7 +94,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px; }
 .btn:hover { background: var(--surface-2); }
 .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 @media (prefers-color-scheme: dark) { .btn-primary { color: #10201b; } }
-.btn-primary:hover { filter: brightness(1.08); }
+.btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
 .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 .btn-danger { border-color: var(--danger); color: var(--danger); background: transparent; }
@@ -255,28 +255,54 @@ input[type=color] {
 .closet-filters { display: flex; gap: 6px; }
 
 .closet-grid {
-  display: grid; gap: 12px;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 
+/* A photo card: the garment gets the space, the text sits under it. */
 .item-card {
-  display: flex; align-items: center; gap: 12px; padding: 10px;
+  position: relative;
+  display: flex; flex-direction: column;
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius); overflow: hidden;
 }
 .item-card.is-benched { opacity: .5; }
 
 .item-thumb {
-  width: 54px; height: 54px; flex: none;
-  border-radius: 9px; overflow: hidden; border: 1px solid var(--border);
+  width: 100%; aspect-ratio: 3 / 4;
+  border-bottom: 1px solid var(--border);
 }
-.item-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* `contain`, not `cover`: the point of the picture is to identify the garment,
+   and cropping a photo to fill the frame is exactly how you lose the collar or
+   the pattern that tells two shirts apart. The letterboxing shows the item's
+   own color, which is information rather than filler. */
+.item-thumb img {
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  background: var(--surface-2);
+}
 
-.item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.item-body { padding: 10px 12px 12px; min-width: 0; display: flex; flex-direction: column; }
 .item-body strong { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .item-body span { font-size: 11.5px; }
 
-.item-actions { display: flex; flex-direction: column; gap: 1px; }
+/* Floated over the photo so they cost no height, on a scrim so they stay
+   legible against a white shirt or a black shoe alike. */
+.item-actions {
+  position: absolute; top: 8px; right: 8px;
+  display: flex; gap: 1px; padding: 2px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+
+/* Revealing the controls on hover keeps the grid clean, but only where there
+   is a pointer to hover with — on a phone they must always be there. */
+@media (hover: hover) {
+  .item-actions { opacity: 0; transition: opacity .14s; }
+  .item-card:hover .item-actions,
+  .item-card:focus-within .item-actions { opacity: 1; }
+}
 
 /* ---------------- history ---------------- */
 
@@ -335,6 +361,7 @@ input[type=color] {
   .history-names { grid-column: 1 / -1; }
   .add-card { flex-direction: column; }
   .drop-zone { width: 100%; height: 150px; }
+  .closet-grid { gap: 10px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 }
 
 /* ---------------- sync ---------------- */

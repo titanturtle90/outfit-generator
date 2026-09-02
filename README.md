@@ -9,6 +9,8 @@ machine.
 
 ![the week view](docs/week.png)
 
+![the closet](docs/closet.png)
+
 ## Running it
 
 It's a static site with no build step.

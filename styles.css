@@ -71,11 +71,7 @@ h3 { font-size: 15px; }
   border-bottom: 1px solid var(--border);
 }
 
-.brand { display: flex; align-items: center; gap: 10px; }
-.brand-mark {
-  width: 24px; height: 24px; border-radius: 7px; flex: none;
-  background: linear-gradient(135deg, var(--accent), #b98a5d 70%);
-}
+.brand { display: flex; align-items: center; }
 
 /* A segmented pill rather than plain inline links — reads as one control. */
 .tabs {
@@ -441,7 +437,6 @@ select, textarea {
     padding: max(18px, env(safe-area-inset-top)) 16px 14px;
   }
   .brand h1 { font-size: 23px; }
-  .brand-mark { width: 28px; height: 28px; }
   .tabs { justify-content: stretch; }
   .tab { flex: 1; text-align: center; padding: 10px 8px; }
   /* Horizontal only — vertical rhythm stays, but every card gets more of the

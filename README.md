@@ -52,18 +52,18 @@ To put it online, push this repo and turn on **GitHub Pages** (Settings → Page
    card. Unchecking **In rotation** benches it — kept in the closet, left out
    of outfits — which is what you want for laundry, seasonal pieces, or a shirt
    you have gone off.
-2. **This Week** — four outfits, generated. Each shows why it was picked.
+2. **This Week** — four outfits, generated, each shown as its shirt, pants and
+   shoes side by side.
    - **Shuffle** re-rolls one day, avoiding what the other days are using.
    - **Lock** pins a day you like so regenerating leaves it alone.
    - **Mark worn** logs it, which is what feeds the variety tracking. This is
      the one habit the app needs from you — without it, it can't know what
      you've actually worn.
+   - **Regenerate week**, at the bottom, re-rolls every day that isn't locked
+     or already worn.
 3. **History** — what you've worn, how much of your closet you've actually got
    through, and which pieces are still sitting unworn.
 4. **Settings** — work days, rotation gaps, and backup.
-
-Bench an item (the ✓ button on a closet card) to keep it while taking it out of
-rotation — laundry, seasonal, or a shirt you've gone off.
 
 ## How outfits get picked
 

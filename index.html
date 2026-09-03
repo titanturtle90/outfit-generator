@@ -26,16 +26,15 @@
   <section id="view-week" class="view is-active">
     <div class="view-head">
       <div class="week-nav">
-        <button class="btn btn-ghost" id="week-prev" title="Previous week">&#8592;</button>
-        <div class="week-label">
-          <strong id="week-title">This week</strong>
-          <span class="muted" id="week-range"></span>
+        <div class="week-pager">
+          <button class="btn" id="week-prev" title="Previous week" aria-label="Previous week">&#8592;</button>
+          <div class="week-label">
+            <strong id="week-title">This week</strong>
+            <span class="muted" id="week-range"></span>
+          </div>
+          <button class="btn" id="week-next" title="Next week" aria-label="Next week">&#8594;</button>
         </div>
-        <button class="btn btn-ghost" id="week-next" title="Next week">&#8594;</button>
-        <button class="btn btn-ghost" id="week-today">Today</button>
-      </div>
-      <div class="week-actions">
-        <button class="btn btn-primary" id="regenerate">Regenerate week</button>
+        <button class="btn week-today-btn" id="week-today">Today</button>
       </div>
     </div>
 
@@ -46,6 +45,10 @@
     </div>
 
     <div class="day-grid" id="day-grid"></div>
+
+    <div class="week-footer">
+      <button class="btn" id="regenerate">Regenerate week</button>
+    </div>
   </section>
 
   <!-- ============================ CLOSET ============================ -->

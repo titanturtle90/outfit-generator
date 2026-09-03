@@ -265,15 +265,6 @@
     head.innerHTML =
       `<div><h3>${Outfit.DAY_NAMES[date.getDay()]}</h3>
        <span class="muted">${fmt.format(date)}${isToday ? ' · today' : ''}</span></div>`;
-
-    if (outfit) {
-      const badge = document.createElement('div');
-      badge.className = 'badges';
-      badge.innerHTML =
-        `<span class="badge" title="Color harmony">${outfit.colorScore}<em>color</em></span>` +
-        `<span class="badge" title="How overdue these pieces are">${outfit.varietyScore}<em>fresh</em></span>`;
-      head.appendChild(badge);
-    }
     card.appendChild(head);
 
     if (!outfit) {
@@ -292,17 +283,6 @@
       pieces.appendChild(pieceEl(item, label));
     });
     card.appendChild(pieces);
-
-    if (outfit.notes && outfit.notes.length) {
-      const why = document.createElement('ul');
-      why.className = 'why';
-      outfit.notes.slice(0, 3).forEach(n => {
-        const li = document.createElement('li');
-        li.textContent = n;
-        why.appendChild(li);
-      });
-      card.appendChild(why);
-    }
 
     const actions = document.createElement('div');
     actions.className = 'day-actions';
@@ -327,15 +307,17 @@
     return card;
   }
 
+  /** One garment within a day's outfit — a large square photo, matching the
+   *  closet cards, with the item's role, name and color beneath it. */
   function pieceEl(item, label) {
-    const el = document.createElement('div');
+    const el = document.createElement('article');
     el.className = 'piece';
     const url = urlFor(item);
     el.innerHTML =
-      `<div class="thumb" style="background:${item.color}">` +
+      `<div class="item-thumb" style="background:${item.color}">` +
         (url ? `<img src="${url}" alt="${escapeHtml(item.name)}">` : '') +
       `</div>` +
-      `<div class="piece-meta">` +
+      `<div class="item-body">` +
         `<span class="piece-label">${label}</span>` +
         `<strong>${escapeHtml(item.name)}</strong>` +
         `<span class="muted">${Color.name(item.color)} · worn ${item.wearCount || 0}×</span>` +

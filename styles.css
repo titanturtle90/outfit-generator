@@ -30,13 +30,26 @@
 
 * { box-sizing: border-box; }
 
+html {
+  /* Stops the page from rubber-banding sideways even if something future
+     pokes a pixel past the edge. Deliberately NOT overflow-x: hidden here:
+     that's the standard-looking fix, but Safari (desktop and iOS) has a
+     long-standing bug where overflow-x: hidden on an ancestor silently
+     breaks position: sticky on its descendants — which is exactly what the
+     top bar below depends on. overscroll-behavior carries no such risk. */
+  overscroll-behavior-x: none;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* old Edge */
 }
+body::-webkit-scrollbar { display: none; }  /* Safari/Chrome-family */
 
 h1, h2, h3 { margin: 0; line-height: 1.25; }
 h1 { font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
@@ -188,7 +201,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 24px; }
    item there look like the same object. */
 .pieces {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 10px; padding: 2px 14px 4px;
+  gap: 6px; padding: 2px 6px 4px;
 }
 
 .piece { min-width: 0; }
@@ -431,7 +444,10 @@ select, textarea {
   .brand-mark { width: 28px; height: 28px; }
   .tabs { justify-content: stretch; }
   .tab { flex: 1; text-align: center; padding: 10px 8px; }
-  main { padding: 16px; }
+  /* Horizontal only — vertical rhythm stays, but every card gets more of the
+     screen's width to work with, which is what actually grows the piece
+     images below. */
+  main { padding: 16px 10px; }
   .history-row { grid-template-columns: 1fr auto; row-gap: 4px; }
   .history-names { grid-column: 1 / -1; }
   .add-card { flex-direction: column; }
